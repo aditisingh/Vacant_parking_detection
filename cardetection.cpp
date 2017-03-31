@@ -17,19 +17,19 @@ using namespace tinyxml2;
 int main()
 {
 
-	String car_cascade_name = "DS/lbp_1200/cascade.xml";
+	String car_cascade_name = "cascade.xml";
 	CascadeClassifier car_cascade;
 	Mat frame, gray;
 	vector<Rect> cars;
 
 	if (!car_cascade.load(car_cascade_name)) { printf("--(!)Error loading face cascade\n"); return -1; };
 
-	String file1="/home/aditi/Computer_Vision/HW2/PKLot-small/parking1a/cloudy/2012-12-12/2012-12-12_10_00_05.jpg";
-	String file2="/home/aditi/Computer_Vision/HW2/PKLot-small/parking1a/rainy/2012-12-07/2012-12-07_16_42_25.jpg";
-	String file3="/home/aditi/Computer_Vision/HW2/PKLot-small/parking1b/cloudy/2013-02-22/2013-02-22_17_10_11.jpg";
-	String file4="/home/aditi/Computer_Vision/HW2/PKLot-small/parking1b/rainy/2013-02-26/2013-02-26_13_04_33.jpg";
-	String file5="/home/aditi/Computer_Vision/HW2/PKLot-small/parking2/cloudy/2012-09-12/2012-09-12_07_23_35.jpg";
-	String file6="/home/aditi/Computer_Vision/HW2/PKLot-small/parking2/rainy/2012-09-16/2012-09-16_07_57_59.jpg";
+	String file1="2012-12-12_10_00_05.jpg";
+	String file2="2012-12-07_16_42_25.jpg";
+	String file3="2013-02-22_17_10_11.jpg";
+	String file4="2013-02-26_13_04_33.jpg";
+	String file5="2012-09-12_06_05_16.jpg";
+	String file6="2012-09-16_06_22_55.jpg ";
 
 	String file=file1;
 	frame = imread(file);
@@ -94,42 +94,76 @@ int main()
 		//Storing necessary data for first space in vectors
 		std::vector<int> Spaceid;
 		std::vector<int> Occupied;
-		std::vector<Point> Center;
+		std::vector<Point> Center, Coordinates, nextpoint;
 		std::vector<Size> size1;
 		std::vector<float> Angle;
+
 		Spaceid.push_back(atoi(firstSpaceElement->Attribute("id")));
 		Occupied.push_back(atoi(firstSpaceElement->Attribute("occupied")));
 		Center.push_back(Point(atoi(centerpoints->Attribute("x")), atoi(centerpoints->Attribute("y"))));
 		size1.push_back(Point(atoi(size->Attribute("w")), atoi(size->Attribute("h"))));
 		Angle.push_back(atoi(angle->Attribute("d")));
-}
-	// XMLError eres = doc.loadFile(xml_file);
-	// //XMLError eres = doc.LoadFile(argv[1]);
-	// XMLNode* root = doc.FirstChildElement("parking");
-	// XMLElement* space = root->FirstChildElement("space");
-	
-	// for (XMLElement* space = root->FirstChildElement("space"); space!=NULL; space = space->NextSiblingElement())
-	// {
-	// 	XMLElement* rotated = space->FirstChildElement("rotatedRect");
-	// 	XMLElement* center = rotated->FirstChildElement("center");
-	// 	XMLElement* size = rotated->FirstChildElement("size");
-	// 	XMLElement* angle = rotated->FirstChildElement("angle");
 
-	// 	center->QueryFloatAttribute("x", &x);
-	// 	center->QueryFloatAttribute("y", &y);
-	// 	size->QueryFloatAttribute("w", &w);
-	// 	size->QueryFloatAttribute("h", &h);
-	// 	angle->QueryFloatAttribute("d", &d);
+		Coordinates.push_back(Point(atoi(point->Attribute("x")), atoi(point->Attribute("y"))));
+		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+		nextpoint = nextpoint->NextSiblingElement("point");
+		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+		nextpoint = nextpoint->NextSiblingElement("point");
+		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+		vector<Point> gridpoints;
+		int SpaceNos = atoi(lastSpaceElement->Attribute("id"));
+		for (int i = 1; i < SpaceNos; i++)
+		{
+			for (int i = 0; i < cars.size(); i++)
+			{
+				float diff=sqrt(pow((cars[i].x-centerpoints.x),2)+pow((cars[i].y-centerpoints.y),2));
+				//to find overlapping area, divide the detected rectangle in 2x2 size grid, and store the points of intersection
+				for( int x_coord=cars[i].x;x_coord<cars[i].x+cars[i].width;x_coord=x_coord+2)
+				{
+					for( int y_coord=cars[i].y;y_coord<cars[i].y+cars[i].height;y_coord=y_coord+2)
+					{
+						gridpoints.push_back(Point(x_coord,y_coord));
+						//for every point find if it lies in the other rectangle, dist is less than minimum side
+					}		
+				}
+				
+					
 
-	// 		//cout << x << "," << y << "," << w << "," << h << "," << d << endl;
-		
-	// 	/*if (d < -45) {
-	// 		d += 90;
-	// 		swap(w,h);
-	// 	}*/
+			}
+			//Accessing the next space elements
+			rotatedRect = nextSpaceElement->FirstChildElement("rotatedRect");
+			centerpoints = rotatedRect->FirstChildElement("center");
+			size = rotatedRect->FirstChildElement("size");
+			angle = rotatedRect->FirstChildElement("angle");
+			contour = nextSpaceElement->FirstChildElement("contour");
+			point = contour->FirstChildElement("point");
+			nextpoint = point->NextSiblingElement("point");
 
-	// 	RotatedRect rRect = RotatedRect(Point2f(x, y), Size2f(w,h),d);
+			//storing necessary data in vectors
+			Spaceid.push_back(atoi(nextSpaceElement->Attribute("id")));
 
+			if (nextSpaceElement->Attribute("occupied") != NULL)
+				Occupied.push_back(atoi(nextSpaceElement->Attribute("occupied")));
+
+			else
+				Occupied.push_back(-1);
+
+
+			Center.push_back(Point(atoi(centerpoints->Attribute("x")), atoi(centerpoints->Attribute("y"))));
+			Size.push_back(Point(atoi(size->Attribute("w")), atoi(size->Attribute("h"))));
+			Angle.push_back(atoi(angle->Attribute("d")));
+			Coordinates.push_back(Point(atoi(point->Attribute("x")), atoi(point->Attribute("y"))));
+			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+			nextpoint = nextpoint->NextSiblingElement("point");
+			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+			nextpoint = nextpoint->NextSiblingElement("point");
+			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
+
+			//loading the next space
+			nextSpaceElement = nextSpaceElement->NextSiblingElement("space");
+
+		}
+	}
 	waitKey();
 	return 0;
 }
