@@ -21,12 +21,18 @@ int main()
 	CascadeClassifier car_cascade;
 	Mat frame, gray;
 	vector<Rect> cars;
-	int SpaceNos ;
 	std::vector<int> Occupied;
+	std::vector<int> Detected;
 	int occupied_flag=0;
-	float minimum_dist=2000;
 	int occupied_count=0;
 	int occupied_detected=0;
+	std::vector<int> Spaceid;
+	std::vector<Point> Center;
+	std::vector<Point> Coordinates;
+	std::vector<Size> size1;
+	std::vector<float> Angle;
+	int x_coord, y_coord;
+	int SpaceNos;
 
 	if (!car_cascade.load(car_cascade_name)) { printf("--(!)Error loading face cascade\n"); return -1; };
 
@@ -37,7 +43,7 @@ int main()
 	String file5="/home/aditi/Computer_Vision/HW2/PKLot-small/parking2/cloudy/2012-09-12/2012-09-12_07_23_35.jpg";
 	String file6="/home/aditi/Computer_Vision/HW2/PKLot-small/parking2/rainy/2012-09-16/2012-09-16_07_57_59.jpg";
 	
-	String file=file5;
+	String file=file6;
 	frame = imread(file);
 
 	cvtColor(frame, gray, CV_RGB2GRAY);
@@ -98,23 +104,11 @@ int main()
 		XMLElement * nextpoint = point->NextSiblingElement("point");
 
 		//Storing necessary data for first space in vectors
-		std::vector<int> Spaceid;
-		std::vector<Point> Center;
-		std::vector<Point> Coordinates;
-		std::vector<Size> size1;
-		std::vector<float> Angle;
-		int x_coord=atoi(centerpoints->Attribute("x"));
-		int y_coord=atoi(centerpoints->Attribute("y"));
-		Spaceid.push_back(atoi(firstSpaceElement->Attribute("id")));	
+		Spaceid.push_back(atoi(firstSpaceElement->Attribute("id")));
 		Occupied.push_back(atoi(firstSpaceElement->Attribute("occupied")));
-		Center.push_back(Point(x_coord,y_coord));
-		float width=atoi(size->Attribute("w"));
-		float height=atoi(size->Attribute("h"));
-		size1.push_back(Point(width,height));
+		Center.push_back(Point(atoi(centerpoints->Attribute("x")), atoi(centerpoints->Attribute("y"))));
+		size1.push_back(Point(atoi(size->Attribute("w")), atoi(size->Attribute("h"))));
 		Angle.push_back(atoi(angle->Attribute("d")));
-
-		// if(occ)//this might have issues, store in a variable and use
-		circle(frame, Point(x_coord,y_coord), 3,Scalar(0,0,255), -1,8,0);
 
 		Coordinates.push_back(Point(atoi(point->Attribute("x")), atoi(point->Attribute("y"))));
 		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
@@ -122,45 +116,13 @@ int main()
 		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
 		nextpoint = nextpoint->NextSiblingElement("point");
 		Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
-		vector<Point> gridpoints;
-		SpaceNos = atoi(lastSpaceElement->Attribute("id"));
-		// cout<<"Space ID: "<<0<<" "<<atoi(firstSpaceElement->Attribute("occupied"))<<endl;
 
+		//calculating number of spaces
+		SpaceNos = atoi(lastSpaceElement->Attribute("id"));
 
 		for (int i = 1; i < SpaceNos; i++)
-		{	
-
-			// // occupied_count+=atoi(firstSpaceElement->Attribute("occupied"));
-			// minimum_dist=2000;
-			// for (int j = 0; j < cars.size(); j++)
-			// {
-			// 	circle(frame, Point(cars[j].x+0.5*cars[j].width,cars[j].y+0.5*cars[j].height), 3,Scalar(0,255,0), -1,8,0);
-
-			// 	float dist=sqrt(pow((cars[j].x+0.5*cars[j].width-x_coord),2)+pow((cars[j].y+0.5*cars[j].height-y_coord),2));
-			// 	float h1=sqrt(pow(cars[j].width,2)+pow(cars[j].height,2));
-			// 	float h2=sqrt(pow(width,2)+pow(height,2));
-			// 	if((dist<minimum_dist)&&(dist<(h1+h2)))
-			// 		{
-			// 			minimum_dist=dist;occupied_flag=1; 
-			// 			circle(frame, Point(cars[j].x+0.5*cars[j].width,cars[j].y+0.5*cars[j].height), 3,Scalar(0,255,0), -1,8,0);
-			// 			// cout<<i<<" "<<dist<<" "<<minimum_dist<<" "<<h1+h2<<endl;
-			// 		}
-			// 	// if(diff<)
-			// // 	//to find overlapping area, divide the detected rectangle in 2x2 size grid, and store the points of intersection
-			// // 	for( int x_coord=cars[i].x;x_coord<cars[i].x+cars[i].width;x_coord=x_coord+2)
-			// // 	{
-			// // 		for( int y_coord=cars[i].y;y_coord<cars[i].y+cars[i].height;y_coord=y_coord+2)
-			// // 		{
-			// // 			gridpoints.push_back(Point(x_coord,y_coord));
-			// // 			//for every point find if it lies in the other rectangle, dist is less than minimum side
-			// // 		}		
-			// // 	}	
-			// }
-			// if(occupied_flag)
-			// 	occupied_detected++;
-
-			// cout<<occupied_flag<<" "<<atoi(firstSpaceElement->Attribute("occupied"))<<endl;
-			// Accessing the next space elements
+		{
+			//Accessing the next space elements
 			rotatedRect = nextSpaceElement->FirstChildElement("rotatedRect");
 			centerpoints = rotatedRect->FirstChildElement("center");
 			size = rotatedRect->FirstChildElement("size");
@@ -173,16 +135,12 @@ int main()
 			Spaceid.push_back(atoi(nextSpaceElement->Attribute("id")));
 
 			if (nextSpaceElement->Attribute("occupied") != NULL)
-				Occupied.push_back(atoi(firstSpaceElement->Attribute("occupied")));
+				Occupied.push_back(atoi(nextSpaceElement->Attribute("occupied")));
 			else
-				Occupied.push_back(0);
+				Occupied.push_back(-1);
 
-			int x_coord=atoi(centerpoints->Attribute("x"));
-			int y_coord=atoi(centerpoints->Attribute("y"));
-			Center.push_back(Point(x_coord,y_coord));
-			float width=atoi(size->Attribute("w"));
-			float height=atoi(size->Attribute("h"));
-			size1.push_back(Point(width,height));			
+			Center.push_back(Point(atoi(centerpoints->Attribute("x")), atoi(centerpoints->Attribute("y"))));
+			size1.push_back(Point(atoi(size->Attribute("w")), atoi(size->Attribute("h"))));
 			Angle.push_back(atoi(angle->Attribute("d")));
 			Coordinates.push_back(Point(atoi(point->Attribute("x")), atoi(point->Attribute("y"))));
 			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
@@ -190,24 +148,62 @@ int main()
 			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
 			nextpoint = nextpoint->NextSiblingElement("point");
 			Coordinates.push_back(Point(atoi(nextpoint->Attribute("x")), atoi(nextpoint->Attribute("y"))));
-			
-			// circle(frame, Point(x_coord,y_coord), 3,Scalar(0,0,255), -1,8,0);
-			// cout<<"Space ID: "<<i<<" "<<atoi(firstSpaceElement->Attribute("occupied"))<<endl;
 
 			//loading the next space
 			nextSpaceElement = nextSpaceElement->NextSiblingElement("space");
-			//clear vectors after use
-
 		}
+		
 	}
 
-	int sum_of_elems=0;
+	int total_occupied=0;
 	for(vector<int>::iterator it=Occupied.begin();it!=Occupied.end();++it)
-		sum_of_elems+=*it;
+		total_occupied+=*it;
 
-	cout<<"Sum of occupied: "<<sum_of_elems<<endl;
+	cout<<"Occupied parking lots: "<<total_occupied<<endl;
 
-	cout<<"Spaces :"<<SpaceNos<<" occupied total: "<<occupied_count<<", detected: "<<SpaceNos-occupied_detected<<" ,percentage: "<<100.0*occupied_detected/occupied_count<<endl;
+	// float minimum_dist=2000;
+	float dist1, dist2, dist3, dist4, hypo;
+	occupied_flag=0, occupied_count=0;
+	//to store distance from center of rotated rect to each vertex
+
+	//for every parking space, find the closest and possible car in it
+	for (int i = 0; i < SpaceNos; i++)
+	{	
+		occupied_flag=0;
+		if(Occupied[i]==1)
+		{
+			int x_coord=Center[i].x;
+			int y_coord=Center[i].y;
+			
+			for (int j = 0; j < cars.size(); j++)
+			{
+				dist1=sqrt(pow((cars[j].x-x_coord),2)+pow((cars[j].y-y_coord),2));
+				dist2=sqrt(pow((cars[j].x+cars[j].width-x_coord),2)+pow((cars[j].y-y_coord),2));
+				dist3=sqrt(pow((cars[j].x-x_coord),2)+pow((cars[j].y+cars[j].height-y_coord),2));
+				dist4=sqrt(pow((cars[j].x+cars[j].width-x_coord),2)+pow((cars[j].y+cars[j].height-y_coord),2));
+				hypo=sqrt(pow(cars[j].width,2)+pow(cars[j].height,2));
+
+				if(0.45*hypo>min(dist1,min(dist2,min(dist3,dist4))))
+					occupied_flag=1;
+			}
+			if(occupied_flag)
+				{
+					occupied_count=occupied_count+1;
+					circle(frame, Point(x_coord,y_coord), 3,Scalar(0,0,255), -1,8,0);
+				}
+		}
+		Detected.push_back(occupied_flag);
+	}
+
+	for (int j = 0; j < cars.size(); j++)
+		circle(frame, Point(cars[j].x+0.5*cars[j].width,cars[j].y+0.5*cars[j].height), 3,Scalar(0,255,0), -1,8,0);
+
+	
+	cout<<"Spaces :"<<SpaceNos<<" occupied total: "<<total_occupied<<", detected: "<<occupied_count<<" ,percentage: "<<100.0*occupied_count/total_occupied<<endl;
+	// for (int i = 0; i < SpaceNos; i++)
+	// {
+	// 	cout<<Occupied[i]<<" "<<Detected[i]<<endl;
+	// }
 
 	namedWindow("Frame", WINDOW_NORMAL);
     imshow("Frame",frame);
